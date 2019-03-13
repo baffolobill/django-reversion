@@ -3,6 +3,7 @@ from collections import defaultdict
 from itertools import chain, groupby
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.fields import JSONField
 from django.conf import settings
 from django.contrib.admin.models import LogEntry
 from django.core import serializers
@@ -58,6 +59,11 @@ class Revision(models.Model):
         blank=True,
         verbose_name=_("comment"),
         help_text="A text comment on this revision.",
+    )
+    extra_data = JSONField(
+        blank=True, null=True,
+        verbose_name=_("extra data"), 
+        default=dict, 
     )
 
     def get_comment(self):
@@ -203,6 +209,23 @@ class Version(models.Model):
         ContentType,
         on_delete=models.CASCADE,
         help_text="Content type of the model under version control.",
+    )
+
+    reverted_at = models.DateTimeField(
+        verbose_name=_("reverted at"), 
+        blank=True, null=True,
+        db_index=True,
+    )
+    created_at = models.DateTimeField(
+        verbose_name=_("created at"), 
+        auto_now_add=True, 
+        db_index=True,
+    )
+    parent = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        blank=True, null=True,
+        help_text="Points to parent (previous) version of the object."
     )
 
     @property

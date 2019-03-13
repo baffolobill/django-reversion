@@ -25,6 +25,8 @@ else:
         set_user,
         get_comment,
         set_comment,
+        get_extra_data,
+        set_extra_data,
         get_date_created,
         set_date_created,
         add_meta,
@@ -36,4 +38,4 @@ else:
         get_registered_models,
     )
 
-__version__ = VERSION = (3, 0, 3)
+__version__ = VERSION = (3, 1, 0)

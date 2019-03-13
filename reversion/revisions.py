@@ -31,6 +31,7 @@ _StackFrame = namedtuple("StackFrame", (
     "date_created",
     "db_versions",
     "meta",
+    "extra_data",
 ))
 
 
@@ -78,6 +79,7 @@ def _push_frame(manage_manually, using):
             date_created=timezone.now(),
             db_versions={using: {}},
             meta=(),
+            extra_data=None,
         )
     _local.stack += (stack_frame,)
 
@@ -102,11 +104,20 @@ def _pop_frame():
             date_created=prev_frame.date_created,
             db_versions=db_versions,
             meta=prev_frame.meta,
+            extra_data=prev_frame.extra_data,
         )
 
 
 def is_manage_manually():
     return _current_frame().manage_manually
+
+
+def set_extra_data(extra_data):
+    _update_frame(extra_data=extra_data)
+
+
+def get_extra_data():
+    return _current_frame().extra_data
 
 
 def set_user(user):
@@ -214,7 +225,18 @@ def add_to_revision(obj, model_db=None):
         _add_to_revision(obj, db, model_db, True)
 
 
-def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None):
+def _find_parent_version(version):
+    from reversion.models import Version
+    try:
+        # return Version.objects.get_for_object(version.object)[0]
+        return Version.objects\
+                      .get_for_object_reference(version._model, version.object_id)\
+                      .filter(reverted_at__isnull=True)[0]
+    except IndexError:
+        return None
+
+
+def _save_revision(versions, user=None, comment="", meta=(), date_created=None, using=None, extra_data=None):
     from reversion.models import Revision
     # Only save versions that exist in the database.
     # Use _base_manager so we don't have problems when _default_manager is overriden
@@ -243,6 +265,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
         date_created=date_created,
         user=user,
         comment=comment,
+        extra_data=extra_data,
     )
     # Send the pre_revision_commit signal.
     pre_revision_commit.send(
@@ -254,6 +277,7 @@ def _save_revision(versions, user=None, comment="", meta=(), date_created=None, 
     revision.save(using=using)
     # Save version models.
     for version in versions:
+        version.parent = _find_parent_version(version)
         version.revision = revision
         version.save(using=using)
     # Save the meta information.
@@ -292,6 +316,7 @@ def _create_revision_context(manage_manually, using, atomic):
                     meta=current_frame.meta,
                     date_created=current_frame.date_created,
                     using=using,
+                    extra_data=current_frame.extra_data,
                 )
     finally:
         _pop_frame()
