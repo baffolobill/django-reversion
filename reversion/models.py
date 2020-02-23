@@ -3,14 +3,10 @@ from itertools import chain, groupby
 
 from django.apps import apps
 from django.conf import settings
+from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-<<<<<<< HEAD
 from django.contrib.postgres.fields import JSONField
-from django.conf import settings
-from django.contrib.admin.models import LogEntry
-=======
->>>>>>> c854ba67079ebf952528c06475465e47b42e290b
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.base import DeserializationError
