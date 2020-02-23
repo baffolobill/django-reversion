@@ -3,6 +3,38 @@
 django-reversion changelog
 ==========================
 
+3.0.7 - 17/02/2010
+------------------
+
+- Removing deprecated usages of `ugettext_lazy` (@François GUÉRIN).
+- Slovenian translation (@Bor Plestenjak).
+
+
+3.0.6 - 17/02/2020
+------------------
+
+- Packaging improvements (@michael-k).
+- Removing deprecated usages of `force_text` (@Tenzer).
+- Documentation fixes (@chicheng).
+
+
+3.0.5 - 02/12/2019
+------------------
+
+- Improved performance of `get_deleted` for large datasets (@jeremy-engel).
+- Django 3.0 compatibility (@claudep).
+- Drops Django < 1.11 compatibility (@claudep).
+- Fixed errors in manageement commands when `django.contrib.admin` is not in `INSTALLED_APPS` (@irtimir).
+
+
+3.0.4 - 22/05/2019
+------------------
+
+- Remove `django.contrib.admin` dependency from django-reversion (Aitor Ruano).
+- README refactor (@rhenter).
+- Testing against Django 2.2 (@claudep).
+
+
 3.0.3 - 24/01/2019
 ------------------
 
