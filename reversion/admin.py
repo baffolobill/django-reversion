@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-import json
 from contextlib import contextmanager
 from django.db import models, transaction, connection
 from django.conf.urls import url
@@ -14,7 +12,7 @@ from django.urls import reverse
 from django.utils.text import capfirst
 from django.utils.timezone import template_localtime
 from django.utils.translation import ugettext as _
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.formats import localize
 from reversion.errors import RevertError
 from reversion.models import Version
@@ -64,25 +62,18 @@ class VersionAdmin(admin.ModelAdmin):
 
     # Messages.
 
-    def log_addition(self, request, object, change_message=None):
-        change_message = change_message or _("Initial version.")
+    def log_addition(self, request, object, message):
+        change_message = message or _("Initial version.")
+        entry = super().log_addition(request, object, change_message)
         if is_active():
-            # If https://code.djangoproject.com/ticket/27218 is implemented, we
-            # could first call super() and get the change_message from the returned
-            # LogEntry.
-            if isinstance(change_message, list):
-                set_comment(json.dumps(change_message))
-            else:
-                set_comment(change_message)
-        super(VersionAdmin, self).log_addition(request, object, change_message)
+            set_comment(entry.get_change_message())
+        return entry
 
     def log_change(self, request, object, message):
+        entry = super().log_change(request, object, message)
         if is_active():
-            if isinstance(message, list):
-                set_comment(json.dumps(message))
-            else:
-                set_comment(message)
-        super(VersionAdmin, self).log_change(request, object, message)
+            set_comment(entry.get_change_message())
+        return entry
 
     # Auto-registration.
 
@@ -128,7 +119,7 @@ class VersionAdmin(admin.ModelAdmin):
         return inline_model, follow_field
 
     def __init__(self, *args, **kwargs):
-        super(VersionAdmin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Automatically register models if required.
         if not is_registered(self.model):
             inline_fields = ()
@@ -141,7 +132,7 @@ class VersionAdmin(admin.ModelAdmin):
             self._reversion_autoregister(self.model, inline_fields)
 
     def get_urls(self):
-        urls = super(VersionAdmin, self).get_urls()
+        urls = super().get_urls()
         admin_site = self.admin_site
         opts = self.model._meta
         info = opts.app_label, opts.model_name,
@@ -156,11 +147,11 @@ class VersionAdmin(admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         with self.create_revision(request):
-            return super(VersionAdmin, self).add_view(request, form_url, extra_context)
+            return super().add_view(request, form_url, extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         with self.create_revision(request):
-            return super(VersionAdmin, self).change_view(request, object_id, form_url, extra_context)
+            return super().change_view(request, object_id, form_url, extra_context)
 
     def _reversion_revisionform_view(self, request, version, template_name, extra_context=None):
         # Check that database transactions are supported.
@@ -183,9 +174,9 @@ class VersionAdmin(admin.ModelAdmin):
                         response.template_name = template_name  # Set the template name to the correct template.
                         response.render()  # Eagerly render the response, so it's using the latest version.
                         raise _RollBackRevisionView(response)  # Raise exception to undo the transaction and revision.
-        except RevertError as ex:
+        except (RevertError, models.ProtectedError) as ex:
             opts = self.model._meta
-            messages.error(request, force_text(ex))
+            messages.error(request, force_str(ex))
             return redirect("{}:{}_{}_changelist".format(self.admin_site.name, opts.app_label, opts.model_name))
         except _RollBackRevisionView as ex:
             return ex.response
@@ -233,7 +224,7 @@ class VersionAdmin(admin.ModelAdmin):
                 "has_change_permission": self.has_change_permission(request),
             }
             context.update(extra_context or {})
-            return super(VersionAdmin, self).changelist_view(request, context)
+            return super().changelist_view(request, context)
 
     def recoverlist_view(self, request, extra_context=None):
         """Displays a deleted model to allow recovery."""
@@ -251,7 +242,7 @@ class VersionAdmin(admin.ModelAdmin):
             opts=opts,
             app_label=opts.app_label,
             module_name=capfirst(opts.verbose_name),
-            title=_("Recover deleted %(name)s") % {"name": force_text(opts.verbose_name_plural)},
+            title=_("Recover deleted %(name)s") % {"name": force_str(opts.verbose_name_plural)},
             deleted=deleted,
         )
         context.update(extra_context or {})
@@ -289,4 +280,4 @@ class VersionAdmin(admin.ModelAdmin):
         # Compile the context.
         context = {"action_list": action_list}
         context.update(extra_context or {})
-        return super(VersionAdmin, self).history_view(request, object_id, context)
+        return super().history_view(request, object_id, context)
