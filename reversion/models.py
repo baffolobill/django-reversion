@@ -10,6 +10,7 @@ from django.contrib.postgres.fields import JSONField
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.base import DeserializationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError, connections, models, router, transaction
 from django.db.models.deletion import Collector
 from django.db.models.functions import Cast
@@ -67,6 +68,7 @@ class Revision(models.Model):
         blank=True, null=True,
         verbose_name=_("extra data"), 
         default=dict, 
+        encoder=DjangoJSONEncoder,
     )
 
     def get_comment(self):
