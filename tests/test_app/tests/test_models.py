@@ -3,8 +3,10 @@ from reversion.models import Version
 from test_app.models import (
     TestModel, TestModelRelated, TestModelParent, TestModelInline,
     TestModelNestedInline,
+    TestModelInlineByNaturalKey, TestModelWithNaturalKey,
 )
 from test_app.tests.base import TestBase, TestModelMixin, TestModelParentMixin
+import json
 
 
 class GetForModelTest(TestModelMixin, TestBase):
@@ -16,6 +18,7 @@ class GetForModelTest(TestModelMixin, TestBase):
 
 
 class GetForModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetForModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -58,6 +61,7 @@ class GetForObjectTest(TestModelMixin, TestBase):
 
 
 class GetForObjectDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetForObjectDb(self):
         with reversion.create_revision(using="postgres"):
@@ -73,6 +77,7 @@ class GetForObjectDbTest(TestModelMixin, TestBase):
 
 
 class GetForObjectModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "postgres"}
 
     def testGetForObjectModelDb(self):
         with reversion.create_revision():
@@ -129,6 +134,7 @@ class GetForObjectReferenceTest(TestModelMixin, TestBase):
 
 
 class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
+    databases = {"default", "postgres"}
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision(using="postgres"):
@@ -138,6 +144,7 @@ class GetForObjectReferenceDbTest(TestModelMixin, TestBase):
 
 
 class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetForObjectReferenceModelDb(self):
         with reversion.create_revision():
@@ -153,6 +160,7 @@ class GetForObjectReferenceModelDbTest(TestModelMixin, TestBase):
 
 
 class GetDeletedTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetDeleted(self):
         with reversion.create_revision():
@@ -197,6 +205,7 @@ class GetDeletedTest(TestModelMixin, TestBase):
 
 
 class GetDeletedDbTest(TestModelMixin, TestBase):
+    databases = {"default", "mysql", "postgres"}
 
     def testGetDeletedDb(self):
         with reversion.create_revision(using="postgres"):
@@ -214,6 +223,7 @@ class GetDeletedDbTest(TestModelMixin, TestBase):
 
 
 class GetDeletedModelDbTest(TestModelMixin, TestBase):
+    databases = {"default", "postgres"}
 
     def testGetDeletedModelDb(self):
         with reversion.create_revision():
@@ -412,3 +422,24 @@ class RevisionRevertDeleteTest(TestBase):
         self.assertEqual(
             list(child_a.testmodelnestedinline_set.all()), [grandchild_a]
         )
+
+
+class NaturalKeyTest(TestBase):
+
+    def setUp(self):
+        reversion.register(TestModelInlineByNaturalKey, use_natural_foreign_keys=True)
+        reversion.register(TestModelWithNaturalKey)
+
+    def testNaturalKeyInline(self):
+        with reversion.create_revision():
+            inline = TestModelWithNaturalKey.objects.create()
+            obj = TestModelInlineByNaturalKey.objects.create(test_model=inline)
+        self.assertEqual(json.loads(Version.objects.get_for_object(obj).get().serialized_data), [{
+            'fields': {'test_model': ['v1']},
+            'model': 'test_app.testmodelinlinebynaturalkey',
+            'pk': 1
+        }])
+        self.assertEqual(Version.objects.get_for_object(obj).get().field_dict, {
+            'test_model_id': 1,
+            'id': 1,
+        })

@@ -12,18 +12,13 @@ env:
     - DJANGO_DATABASE_USER_POSTGRES=postgres
     - DJANGO_DATABASE_USER_MYSQL=travis
   matrix:
+    - DJANGO='>=3.1,<3.2'
     - DJANGO='>=3.0,<3.1'
     - DJANGO='>=2.2,<3.0'
     - DJANGO='>=2.1,<2.2'
     - DJANGO='>=2.0,<2.1'
-    - DJANGO='>=1.11,<1.12'
 matrix:
   fast_finish: true
-  exclude:
-    - python: 3.8
-      env: DJANGO='>=1.11,<1.12'
-    - python: 3.7
-      env: DJANGO='>=1.11,<1.12'
 addons:
   apt:
     packages:
@@ -33,8 +28,7 @@ services:
   - mysql
 install:
   - pip install --pre django$DJANGO
-  # mysqlclient 1.4 is not compatible with Django 1.11
-  - pip install flake8 coverage sphinx psycopg2 mysqlclient==1.3.14 -e .
+  - pip install flake8 coverage sphinx psycopg2 mysqlclient -e .
 before_script:
   - mysql -e 'create database test_project'
   - psql -c 'create database test_project;' -U postgres;
@@ -51,7 +45,7 @@ deploy:
     secure: XW4/9HiChbPJSJe4d/MRcO+ViPGhW1iQ8kVi814KJh7mCxOAKijpW5hfdc9oSKB6d8iYB3OzZ7naIUU9GMce40bpeTgPDLVBLCSYKRNLuVoJdh+Q6ItGUiFf8kAJz5jgopG80QnCpLA9JvYxKVJ4amfYWWm204eQmIEnRRAd+Jk=
   on:
     tags: true
-    condition: $DJANGO = '>=3.0,<3.1'
+    condition: $DJANGO = '>=3.1,<3.2'
     python: 3.6
     repo: etianen/django-reversion
   distributions: sdist bdist_wheel
