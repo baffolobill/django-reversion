@@ -20,6 +20,7 @@ _VersionOptions = namedtuple("VersionOptions", (
     "format",
     "for_concrete_model",
     "ignore_duplicates",
+    "use_natural_foreign_keys",
 ))
 
 
@@ -201,6 +202,7 @@ def _add_to_revision(obj, using, model_db, explicit):
             version_options.format,
             (obj,),
             fields=version_options.fields,
+            use_natural_foreign_keys=version_options.use_natural_foreign_keys,
         ),
         object_repr=force_str(obj),
     )
@@ -389,7 +391,7 @@ def _get_senders_and_signals(model):
 
 
 def register(model=None, fields=None, exclude=(), follow=(), format="json",
-             for_concrete_model=True, ignore_duplicates=False):
+             for_concrete_model=True, ignore_duplicates=False, use_natural_foreign_keys=False):
     def register(model):
         # Prevent multiple registration.
         if is_registered(model):
@@ -413,6 +415,7 @@ def register(model=None, fields=None, exclude=(), follow=(), format="json",
             format=format,
             for_concrete_model=for_concrete_model,
             ignore_duplicates=ignore_duplicates,
+            use_natural_foreign_keys=use_natural_foreign_keys,
         )
         # Register the model.
         _registered_models[_get_registration_key(model)] = version_options
